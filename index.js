@@ -1,47 +1,70 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Host Control</title>
-</head>
-<body>
-  <h1>Host Control</h1>
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const QRCode = require('qrcode'); // QRコード生成ライブラリを追加
 
-  <h2>色の選択</h2>
-  <form id="colorForm">
-    <label><input type="radio" name="color" value="#FF0000" checked> 赤</label><br>
-    <label><input type="radio" name="color" value="#0000FF"> 青</label><br>
-    <label><input type="radio" name="color" value="#00FF00"> 緑</label><br>
-    <label><input type="radio" name="color" value="#FFFF00"> 黄</label><br>
-    <label><input type="radio" name="color" value="#FFC0CB"> 桃</label><br>
-    <label><input type="radio" name="color" value="#800080"> 紫</label><br>
-    <label><input type="radio" name="color" value="#FFFFFF"> 白</label><br>
-  </form>
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
-  <h2>点灯パターン</h2>
-  <form id="modeForm">
-    <label><input type="radio" name="mode" value="steady" checked> 常時点灯</label><br>
-    <label><input type="radio" name="mode" value="pattern1"> 500ms 点灯 + 500ms 消灯</label><br>
-    <label><input type="radio" name="mode" value="pattern2"> 1000ms 点灯 + 1000ms 消灯</label><br>
-  </form>
+let isOn = false;
+let blinkTimer;
 
-  <button id="sendBtn">送信</button>
+app.get('/host', (req, res) => {
+  res.sendFile(__dirname + '/host.html');
+});
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+app.get('/client', (req, res) => {
+  res.sendFile(__dirname + '/client.html');
+});
 
-    document.getElementById('sendBtn').onclick = () => {
-      const selectedColor = document.querySelector('input[name="color"]:checked');
-      const selectedMode = document.querySelector('input[name="mode"]:checked');
-      if (selectedColor && selectedMode) {
-        socket.emit('changeSettings', {
-          color: selectedColor.value,
-          mode: selectedMode.value
-        });
-      } else {
-        alert("色とパターンを選択してください！");
-      }
-    };
-  </script>
-</body>
-</html>
+// QRコード生成エンドポイント
+app.get('/qrcode', (req, res) => {
+  const url = req.query.url || 'http://example.com'; // クエリパラメータからURLを取得
+  QRCode.toDataURL(url, (err, qr) => {
+    if (err) {
+      console.error('Failed to generate QR code:', err);
+      res.status(500).send('Error generating QR code');
+    } else {
+      res.send(`<img src="${qr}" alt="QR Code"><p>URL: <a href="${url}">${url}</a></p>`);
+    }
+  });
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected:', socket.id);
+
+  socket.on('changeSettings', (settings) => {
+    console.log('Settings change:', settings);
+
+    if (blinkTimer) clearInterval(blinkTimer);
+    const { mode, color } = settings;
+
+    if (mode === 'steady') {
+      isOn = true;
+      io.emit('updateBlink', { isOn, color });
+    } else if (mode === 'pattern1') {
+      let short = true;
+      blinkTimer = setInterval(() => {
+        isOn = !isOn;
+        io.emit('updateBlink', { isOn, color });
+        clearInterval(blinkTimer);
+        blinkTimer = setInterval(() => {
+          isOn = !isOn;
+          io.emit('updateBlink', { isOn, color });
+        }, short ? 300 : 200);
+        short = !short;
+      }, 200);
+    } else if (mode === 'pattern2') {
+      blinkTimer = setInterval(() => {
+        isOn = !isOn;
+        io.emit('updateBlink', { isOn, color });
+      }, isOn ? 200 : 800);
+    }
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
