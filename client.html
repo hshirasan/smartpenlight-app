@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Client Light</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: black;
+      overflow: hidden;
+    }
+    #qr-container {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      width: 180px;
+      height: 180px;
+    }
+  </style>
+</head>
+<body>
+  <div id="qr-container">
+    <canvas id="qrcode"></canvas>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    const socket = io();
+
+const clientUrl = "https://your-app-name.onrender.com/client";
+
+    const qrCanvas = document.getElementById('qrcode');
+    QRCode.toCanvas(qrCanvas, clientUrl, { scale: 10, margin: 1 }, (error) => {
+      if (error) console.error('Error generating QR code:', error);
+      else console.log('QR code generated successfully');
+    });
+
+    socket.on('updateBlink', ({ isOn, color, brightness = 1 }) => {
+      if (!isOn) {
+        document.body.style.backgroundColor = 'black';
+        return;
+      }
+      const hexToRgb = (hex) => {
+        const bigint = parseInt(hex.slice(1), 16);
+        return {
+          r: (bigint >> 16) & 255,
+          g: (bigint >> 8) & 255,
+          b: bigint & 255
+        };
+      };
+
+      const rgb = hexToRgb(color);
+      const adjustedColor = `rgb(${Math.round(rgb.r * brightness)}, ${Math.round(rgb.g * brightness)}, ${Math.round(rgb.b * brightness)})`;
+      document.body.style.backgroundColor = adjustedColor;
+    });
+  </script>
+</body>
+</html>
