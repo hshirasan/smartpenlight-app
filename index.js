@@ -65,7 +65,9 @@ io.on('connection', (socket) => {
   socket.emit('updateBlink', { isOn: getNextBlinkState(), color: currentColor });
 });
 
-const PORT = process.env.PORT || 3000;
+
+const PORT = process.env.PORT || 3000; // Render環境では process.env.PORT を使用
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
