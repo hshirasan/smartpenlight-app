@@ -37,7 +37,7 @@
         console.log('Sending settings:', {
           color: selectedColor.value,
           mode: selectedMode.value
-        });
+        }); // デバッグ用
         socket.emit('changeSettings', {
           color: selectedColor.value,
           mode: selectedMode.value
@@ -45,10 +45,12 @@
       }
     };
 
+    // 色選択ラジオボタンの変更を監視
     document.querySelectorAll('input[name="color"]').forEach((radio) => {
       radio.addEventListener('change', sendSettings);
     });
 
+    // 点灯パターンラジオボタンの変更を監視
     document.querySelectorAll('input[name="mode"]').forEach((radio) => {
       radio.addEventListener('change', sendSettings);
     });

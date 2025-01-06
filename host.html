@@ -25,9 +25,15 @@
     <label><input type="radio" name="mode" value="fade"> フェードイン・アウト</label><br>
   </form>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io(); // Render環境でも相対パスで接続可能
+</script>
+
+
+
 
     // サーバーへ設定を送信する関数
     const sendSettings = () => {

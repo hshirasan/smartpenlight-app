@@ -13,7 +13,6 @@ let mode = 'steady'; // 現在の点滅モード
 // 静的ファイルを提供
 app.use(express.static(path.join(__dirname, 'public')));
 
-// HTMLファイルのルートを指定
 app.get('/host', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'host.html'));
 });
@@ -22,7 +21,7 @@ app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'client.html'));
 });
 
-// WebSocketの処理
+// WebSocket接続
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
@@ -32,7 +31,6 @@ io.on('connection', (socket) => {
     mode = settings.mode;
   });
 
-  // 接続時に現在の状態を送信
   socket.emit('updateBlink', { isOn: true, color: currentColor });
 });
 
