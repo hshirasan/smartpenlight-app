@@ -22,7 +22,6 @@
     <label><input type="radio" name="mode" value="steady" checked> 常時点灯</label><br>
     <label><input type="radio" name="mode" value="pattern1"> 500ms 点灯 + 500ms 消灯</label><br>
     <label><input type="radio" name="mode" value="pattern2"> 1000ms 点灯 + 1000ms 消灯</label><br>
-    <label><input type="radio" name="mode" value="fade"> フェードイン・アウト</label><br>
   </form>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -34,10 +33,6 @@
       const selectedColor = document.querySelector('input[name="color"]:checked');
       const selectedMode = document.querySelector('input[name="mode"]:checked');
       if (selectedColor && selectedMode) {
-        console.log('Sending settings:', {
-          color: selectedColor.value,
-          mode: selectedMode.value
-        });
         socket.emit('changeSettings', {
           color: selectedColor.value,
           mode: selectedMode.value
@@ -45,10 +40,12 @@
       }
     };
 
+    // 色選択ラジオボタンの変更を監視
     document.querySelectorAll('input[name="color"]').forEach((radio) => {
       radio.addEventListener('change', sendSettings);
     });
 
+    // 点灯パターンラジオボタンの変更を監視
     document.querySelectorAll('input[name="mode"]').forEach((radio) => {
       radio.addEventListener('change', sendSettings);
     });

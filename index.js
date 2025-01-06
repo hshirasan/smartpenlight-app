@@ -1,41 +1,47 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const path = require('path');
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Host Control</title>
+</head>
+<body>
+  <h1>Host Control</h1>
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+  <h2>色の選択</h2>
+  <form id="colorForm">
+    <label><input type="radio" name="color" value="#FF0000" checked> 赤</label><br>
+    <label><input type="radio" name="color" value="#0000FF"> 青</label><br>
+    <label><input type="radio" name="color" value="#00FF00"> 緑</label><br>
+    <label><input type="radio" name="color" value="#FFFF00"> 黄</label><br>
+    <label><input type="radio" name="color" value="#FFC0CB"> 桃</label><br>
+    <label><input type="radio" name="color" value="#800080"> 紫</label><br>
+    <label><input type="radio" name="color" value="#FFFFFF"> 白</label><br>
+  </form>
 
-let currentColor = '#FFFFFF'; // 現在の色
-let mode = 'steady'; // 現在の点滅モード
+  <h2>点灯パターン</h2>
+  <form id="modeForm">
+    <label><input type="radio" name="mode" value="steady" checked> 常時点灯</label><br>
+    <label><input type="radio" name="mode" value="pattern1"> 500ms 点灯 + 500ms 消灯</label><br>
+    <label><input type="radio" name="mode" value="pattern2"> 1000ms 点灯 + 1000ms 消灯</label><br>
+  </form>
 
-// 静的ファイルを提供
-app.use(express.static(path.join(__dirname, 'public')));
+  <button id="sendBtn">送信</button>
 
-app.get('/host', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'host.html'));
-});
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-app.get('/client', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'client.html'));
-});
-
-// WebSocket接続
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  socket.on('changeSettings', (settings) => {
-    console.log('Settings changed:', settings);
-    currentColor = settings.color;
-    mode = settings.mode;
-  });
-
-  socket.emit('updateBlink', { isOn: true, color: currentColor });
-});
-
-// サーバーを起動
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    document.getElementById('sendBtn').onclick = () => {
+      const selectedColor = document.querySelector('input[name="color"]:checked');
+      const selectedMode = document.querySelector('input[name="mode"]:checked');
+      if (selectedColor && selectedMode) {
+        socket.emit('changeSettings', {
+          color: selectedColor.value,
+          mode: selectedMode.value
+        });
+      } else {
+        alert("色とパターンを選択してください！");
+      }
+    };
+  </script>
+</body>
+</html>
