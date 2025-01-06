@@ -39,7 +39,7 @@
 
     // QRコードを生成して表示
     const qrCanvas = document.getElementById('qrcode');
-    const clientUrl = window.location.origin + '/client';
+    const clientUrl = window.location.origin + '/client'; // 現在のホストに基づくURL
     QRCode.toCanvas(qrCanvas, clientUrl, { scale: 10, margin: 1 }, (error) => {
       if (error) console.error('Error generating QR code:', error);
       else console.log('QR code generated successfully');
@@ -47,10 +47,14 @@
 
     // サーバーから点滅状態を受信
     socket.on('updateBlink', ({ isOn, color, brightness = 1 }) => {
+      console.log('Received data from server:', { isOn, color, brightness }); // デバッグ用
+
       if (!isOn) {
         document.body.style.backgroundColor = 'black';
         return;
       }
+
+      // 色をRGBに変換し、明るさを調整
       const hexToRgb = (hex) => {
         const bigint = parseInt(hex.slice(1), 16);
         return {
@@ -63,6 +67,19 @@
       const rgb = hexToRgb(color);
       const adjustedColor = `rgb(${Math.round(rgb.r * brightness)}, ${Math.round(rgb.g * brightness)}, ${Math.round(rgb.b * brightness)})`;
       document.body.style.backgroundColor = adjustedColor;
+    });
+
+    // WebSocket接続エラーのデバッグ用
+    socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+    });
+
+    socket.on('disconnect', () => {
+      console.warn('WebSocket disconnected');
+    });
+
+    socket.on('connect', () => {
+      console.log('WebSocket connected successfully');
     });
   </script>
 </body>
