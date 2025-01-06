@@ -8,42 +8,26 @@ const io = socketIo(server);
 
 let currentColor = '#FFFFFF'; // 現在の色
 let mode = 'steady'; // 現在の点滅モード
-let fadeProgress = 0; // フェード進行度 (0 ～ 1)
 
-// 点灯状態の計算
+// 点滅のタイミングを絶対時間で計算
 const getNextBlinkState = () => {
   const now = Date.now();
-  if (mode === 'fade') {
-    const totalCycleTime = 3000; // 全体のサイクル時間 (1000ms フェードイン + 1000ms キープ + 1000ms フェードアウト)
-    const currentPhase = now % totalCycleTime;
-
-    if (currentPhase < 1000) {
-      // フェードイン (0 ～ 1)
-      fadeProgress = currentPhase / 1000;
-    } else if (currentPhase < 2000) {
-      // 最大輝度 (1)
-      fadeProgress = 1;
-    } else {
-      // フェードアウト (1 ～ 0)
-      fadeProgress = 1 - (currentPhase - 2000) / 1000;
-    }
-
-    return fadeProgress; // 輝度を返す
-  }
-  const cycleTime = mode === 'pattern1' ? 500 : mode === 'pattern2' ? 1000 : 0;
-  if (cycleTime === 0) return true;
+  const cycleTime = mode === 'pattern1' ? 500 : mode === 'pattern2' ? 1000 : 0; // 周期: 500ms または 1000ms
+  if (cycleTime === 0) return true; // 常時点灯
   return Math.floor((now % cycleTime) / (cycleTime / 2)) === 0;
 };
 
 // 定期的にクライアントに状態を送信
 setInterval(() => {
   const isOn = getNextBlinkState();
-  io.emit('updateBlink', {
-    isOn: mode === 'fade' ? true : isOn, // フェード中は常に true
+  const data = {
+    isOn: mode === 'fade' ? true : isOn,
     color: currentColor,
-    brightness: mode === 'fade' ? fadeProgress : 1 // フェード時は輝度を送信
-  });
-}, 50);
+    brightness: mode === 'fade' ? fadeProgress : 1
+  };
+  console.log('Broadcasting data to clients:', data); // デバッグ用
+  io.emit('updateBlink', data);
+}, 50); // 50msごとに同期状態を送信
 
 app.get('/host', (req, res) => {
   res.sendFile(__dirname + '/host.html');
@@ -53,8 +37,9 @@ app.get('/client', (req, res) => {
   res.sendFile(__dirname + '/client.html');
 });
 
+// WebSocket接続
 io.on('connection', (socket) => {
-  console.log('a user connected:', socket.id);
+  console.log('A user connected:', socket.id);
 
   socket.on('changeSettings', (settings) => {
     console.log('Settings changed:', settings);
@@ -62,13 +47,12 @@ io.on('connection', (socket) => {
     mode = settings.mode;
   });
 
+  // 接続時に現在の状態を送信
   socket.emit('updateBlink', { isOn: getNextBlinkState(), color: currentColor });
 });
 
-
-const PORT = process.env.PORT || 3000; // Render環境では process.env.PORT を使用
+// ポート設定 (Renderで動的ポートを使用)
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
